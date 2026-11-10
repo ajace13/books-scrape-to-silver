@@ -4,7 +4,7 @@ from pathlib import Path
 import pytest
 import requests
 
-from scrape import parse_page
+from books_pipeline.parse import parse_page
 
 PAGE_1 = Path(__file__).parent / "fixtures" / "page-1.html"
 
