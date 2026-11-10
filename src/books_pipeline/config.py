@@ -12,13 +12,13 @@ REQUEST_TIMEOUT_SECONDS = 20
 BOOKS_PER_PAGE = 20
 SITE_PAGE_COUNT = 50
 MAX_CONSECUTIVE_DOWNLOAD_FAILURES = 5
-DEFAULT_CONTACT = "contact not set"
+DEFAULT_USER_AGENT = "books-scrape-to-silver (portfolio project)"
 
 
 def user_agent() -> str:
-    """User-Agent sent with every request, naming the project and the BOOKS_SCRAPER_CONTACT address."""
-    contact = os.environ.get("BOOKS_SCRAPER_CONTACT", DEFAULT_CONTACT)
-    return f"books-scrape-to-silver/0.1 ({contact})"
+    """User-Agent sent with every request: names the BOOKS_SCRAPER_CONTACT address if set, else a generic default."""
+    contact = os.environ.get("BOOKS_SCRAPER_CONTACT")
+    return f"books-scrape-to-silver/0.1 ({contact})" if contact else DEFAULT_USER_AGENT
 
 
 @dataclass(frozen=True)

@@ -4,12 +4,9 @@ A small, polite web-scraping pipeline that turns the practice bookshop [books.to
 
 ```mermaid
 flowchart LR
-    A[books.toscrape.com HTML] -->|one request per second| B[data/raw<br/>bronze HTML]
-    B --> C[parse<br/>BeautifulSoup]
-    C --> D[Open Library API JSON<br/>data/api]
-    C --> E[pandas typing and left join]
-    D --> E
-    E --> F[books_silver.parquet]
+    A[Scrape<br/>books.toscrape.com<br/>+ Open Library API] -->|one request per second| B[Bronze<br/>raw HTML in data/raw<br/>raw JSON in data/api]
+    B -->|BeautifulSoup parse<br/>pandas typing + left join| C[Silver<br/>typed table]
+    C --> D[books_silver.parquet<br/>books_silver.csv]
 ```
 
 ## Run it in three commands
@@ -45,9 +42,19 @@ data/sample/      first 25 rows of the silver table
 
 ## Results
 
-From the notebook (first five catalogue pages, 100 books; first 20 titles looked up, 15 matched):
+The full run collects **1,000 books** across 50 categories, every one with a unique `upc`, and the first 20 titles looked up in Open Library (15 matched).
 
-**Books and average price by star rating**
+**Books and average price by star rating, full catalogue (1,000 books)**
+
+| rating | books | average price (GBP) |
+|---|---|---|
+| 1 | 226 | 34.56 |
+| 2 | 196 | 34.81 |
+| 3 | 203 | 34.69 |
+| 4 | 179 | 36.09 |
+| 5 | 196 | 35.37 |
+
+**Books and average price by star rating, notebook sample (first five pages, 100 books)**
 
 | rating | books | average price (GBP) |
 |---|---|---|
@@ -57,7 +64,7 @@ From the notebook (first five catalogue pages, 100 books; first 20 titles looked
 | 4 | 18 | 33.98 |
 | 5 | 19 | 30.01 |
 
-**Average price by first-publication decade** (matched books only)
+**Average price by first-publication decade** (the 15 matched books only; identical in the notebook and the full run)
 
 | decade | books | average price (GBP) |
 |---|---|---|
@@ -67,16 +74,27 @@ From the notebook (first five catalogue pages, 100 books; first 20 titles looked
 | 2010 | 7 | 39.80 |
 | 2020 | 2 | 38.42 |
 
-Over the full 1,000-book catalogue the rating pattern flattens out: average prices sit between £34.56 and £36.09 for every star rating, so the cheaper five-star books in the first 100 were a small-sample effect. The decade table rests on 15 title-only matches, some of them wrong (next section), so read it as a demonstration of the join, not a finding.
+In the first 100 books five-star titles looked cheapest (£30.01), but over the full catalogue every star rating averages between £34.56 and £36.09, so that was a small-sample effect. The decade table rests on 15 title-only matches, some of them wrong (next section), so read it as a demonstration of the join, not a finding.
 
 ## Data-quality lessons
 
-- **Title-only matching is unreliable.** In a hand check of five Open Library matches, 2 were the wrong book: *Sapiens* matched a 2020 summary book, and *Shakespeare's Sonnets* matched a book about the sonnets. Wrong matches feed wrong years into the decade averages.
+- **Title-only matching is unreliable.** In a hand check of five Open Library matches, 2 were the wrong book: *Sapiens* matched a 2020 summary book, and *Shakespeare's Sonnets* matched a book about the sonnets. Wrong matches feed wrong years into the decade averages. The fix: match on title plus author or ISBN (the shop pages list neither, so that needs another source), or reject a hit whose returned title differs too much from the scraped one. Until then the decade table is labelled as unreliable and the Sapiens mismatch is pinned in a test.
 - **Encoding.** The site sends no charset, so `£` decoded as `Â£` until the bytes were decoded explicitly as UTF-8. A test on the price sign caught it.
 - **Odd values can be real.** The categories `Default` and `Add a comment` are what the site shows, not scraping bugs.
 - **Product codes stay text.** `upc` is never converted to a number.
 
 More in [docs/lessons.md](docs/lessons.md); column definitions in [docs/DATA_DICTIONARY.md](docs/DATA_DICTIONARY.md).
+
+## How I used Claude and where it was wrong
+
+I used Claude as a coding assistant to extend the scraper to all 50 pages, add the book-page details, write the tests and draft the docs. I reviewed each change before running it. From my write-up:
+
+- Its first book-page selectors came from memory, so I had it check a real saved page before using them.
+- It claimed rerunning its encoding repair would fail safely; it wouldn't. The repair we kept backs up and validates files before replacing them.
+- I asked for download failures and parse failures to be reported separately, and for a guard against an empty catalogue.
+- In the docs I had to keep the 1,000-row scraper table separate from the 100-row silver files, and stop the prompt log from being overwritten.
+
+Reviewing generated code is about more than whether it finishes: it means checking the data, the failure behaviour and the documentation. The full paragraph is in [docs/lessons.md](docs/lessons.md).
 
 ## Scraping rules the code follows
 

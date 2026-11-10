@@ -36,10 +36,10 @@ def test_failed_download_saves_nothing(monkeypatch: pytest.MonkeyPatch, tmp_path
 
 
 def test_user_agent_uses_contact_env_var(monkeypatch: pytest.MonkeyPatch) -> None:
-    monkeypatch.setenv("BOOKS_SCRAPER_CONTACT", "someone@example.com")
-    assert "someone@example.com" in config.user_agent()
+    monkeypatch.setenv("BOOKS_SCRAPER_CONTACT", "contact-for-tests")
+    assert config.user_agent() == "books-scrape-to-silver/0.1 (contact-for-tests)"
 
 
 def test_user_agent_default_has_no_personal_contact(monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.delenv("BOOKS_SCRAPER_CONTACT", raising=False)
-    assert config.user_agent() == f"books-scrape-to-silver/0.1 ({config.DEFAULT_CONTACT})"
+    assert config.user_agent() == config.DEFAULT_USER_AGENT

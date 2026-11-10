@@ -24,7 +24,7 @@ pythonpath = ["src"]
 testpaths = ["tests"]
 
 [tool.ruff]
-line-length = 140
+line-length = 150
 target-version = "py312"
 extend-exclude = ["notebooks"]
 
